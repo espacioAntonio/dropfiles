@@ -8,16 +8,16 @@ from werkzeug.utils import secure_filename
 
 import logging.config
 import yaml
-# from pydrop.config import config
+# from dropfiles.config import config
 
 here = os.path.abspath(os.path.dirname(__file__))
 
 blueprint = Blueprint('templated', __name__, template_folder='templates')
 
-log = logging.getLogger('pydrop')
+log = logging.getLogger('dropfiles')
 
 try:
-    with open(os.path.join(here, "pydrop.logging.yaml")) as f:
+    with open(os.path.join(here, "dropfiles.logging.yaml")) as f:
         logging.config.dictConfig(yaml.load(f, yaml.SafeLoader))
 except Exception as err:
     print(f"Could not load logging config: {err}")
@@ -31,7 +31,7 @@ def index():
     # Route to serve the upload form
     return render_template('index.html',
                            page_name='Main',
-                           project_name="pydrop")
+                           project_name="dropfiles")
 
 
 @blueprint.route('/upload', methods=['POST'])
@@ -76,7 +76,7 @@ def upload():
 
     return make_response(("Chunk upload successful", 200))
 
-app = Flask('pydrop',
+app = Flask('dropfiles',
 #                  static_folder=os.path.join(here, 'static'),
 #                  static_url_path='/static',
                   template_folder=os.path.join(here, 'templates'))
