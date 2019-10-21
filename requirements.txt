@@ -3,4 +3,4 @@ python-box
 pyyaml
 cherrypy
 Flask-Session
-
+flask-oidc

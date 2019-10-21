@@ -3,17 +3,17 @@
 import logging
 import os
 
-from flask import render_template, Blueprint, request, make_response, Flask
+from flask import render_template, Blueprint, request, make_response, Flask, redirect, url_for
 from werkzeug.utils import secure_filename
 
 import logging.config
 import yaml
 # from dropfiles.config import config
 
+from flask_oidc import OpenIDConnect
+
 here = os.path.abspath(os.path.dirname(__file__))
-
 blueprint = Blueprint('templated', __name__, template_folder='templates')
-
 log = logging.getLogger('dropfiles')
 
 try:
@@ -24,9 +24,18 @@ except Exception as err:
 else:
     log.info("Log configuration applied")
 
+app = Flask('dropfiles',
+                  template_folder=os.path.join(here, 'templates'))
+app.config["OIDC_CLIENT_SECRETS"] = "client_secrets.json"
+app.config["OIDC_COOKIE_SECURE"] = False
+app.config["OIDC_CALLBACK_ROUTE"] = "/oidc/callback"
+app.config["OIDC_SCOPES"] = ["openid", "email", "profile"]
+app.config["SECRET_KEY"] = "{{ LONG_RANDOM_STRING }}"
+oidc = OpenIDConnect(app)
 
 @blueprint.route('/')
 @blueprint.route('/index')
+@oidc.require_login
 def index():
     # Route to serve the upload form
     return render_template('index.html',
@@ -35,6 +44,7 @@ def index():
 
 
 @blueprint.route('/upload', methods=['POST'])
+@oidc.require_login
 def upload():
     file = request.files['file']
 
@@ -76,9 +86,15 @@ def upload():
 
     return make_response(("Chunk upload successful", 200))
 
-app = Flask('dropfiles',
-#                  static_folder=os.path.join(here, 'static'),
-#                  static_url_path='/static',
-                  template_folder=os.path.join(here, 'templates'))
-
 app.register_blueprint(blueprint)
+
+@app.route("/login")
+@oidc.require_login
+def login():
+    return redirect("/")
+
+@app.route("/logout")
+def logout():
+    oidc.logout()
+    return redirect("/")
+

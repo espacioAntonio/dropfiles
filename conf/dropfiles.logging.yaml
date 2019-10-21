@@ -25,7 +25,7 @@ handlers:
 loggers:
    '':
        handlers: ['default']
-       level: 'INFO'
+       level: 'DEBUG'
        propagate: True
    dropfiles:
        handlers: ['default','error', 'file']
