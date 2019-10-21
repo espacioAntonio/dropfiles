@@ -17,7 +17,7 @@ blueprint = Blueprint('templated', __name__, template_folder='templates')
 log = logging.getLogger('dropfiles')
 
 try:
-    with open(os.path.join(here, "dropfiles.logging.yaml")) as f:
+    with open(os.path.join(here, "conf/dropfiles.logging.yaml")) as f:
         logging.config.dictConfig(yaml.load(f, yaml.SafeLoader))
 except Exception as err:
     print(f"Could not load logging config: {err}")

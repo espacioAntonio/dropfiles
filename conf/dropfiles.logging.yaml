@@ -18,7 +18,7 @@ handlers:
        stream: 'ext://sys.stderr'
    file:
         class: 'logging.FileHandler'
-        filename: 'dropfiles.log'
+        filename: 'logs/dropfiles.log'
         mode: 'a'
         formatter: 'standard'
 
