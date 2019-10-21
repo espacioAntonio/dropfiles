@@ -39,7 +39,7 @@ def upload():
     file = request.files['file']
 
     # save_path = os.path.join(config.data_dir, secure_filename(file.filename))
-    save_path = "{}/tmp/{}".format(here, file.filename)
+    save_path = "{}/tmp/{}".format(here, secure_filename(file.filename))
     current_chunk = int(request.form['dzchunkindex'])
 
     # If the file already exists it's ok if we are appending to it,
