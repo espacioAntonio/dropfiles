@@ -1,28 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-import logging
 import os
+import logging
+import yaml
+
+import dropfiles.config
+
+from urllib.parse import urlparse
 
 from flask import render_template, Blueprint, request, make_response, Flask, redirect, url_for
 from werkzeug.utils import secure_filename
-
-import logging.config
-import yaml
-# from dropfiles.config import config
-
 from flask_oidc import OpenIDConnect
+from keycloak import KeycloakOpenID
 
 here = os.path.abspath(os.path.dirname(__file__))
 blueprint = Blueprint('templated', __name__, template_folder='templates')
 log = logging.getLogger('dropfiles')
-
-try:
-    with open(os.path.join(here, "conf/dropfiles.logging.yaml")) as f:
-        logging.config.dictConfig(yaml.load(f, yaml.SafeLoader))
-except Exception as err:
-    print(f"Could not load logging config: {err}")
-else:
-    log.info("Log configuration applied")
 
 app = Flask('dropfiles',
                   template_folder=os.path.join(here, 'templates'))
@@ -32,6 +25,15 @@ app.config["OIDC_CALLBACK_ROUTE"] = "/oidc/callback"
 app.config["OIDC_SCOPES"] = ["openid", "email", "profile"]
 app.config["SECRET_KEY"] = "{{ LONG_RANDOM_STRING }}"
 oidc = OpenIDConnect(app)
+
+keycloak_netloc = urlparse(oidc.client_secrets["issuer"]).netloc
+keycloak_realm = oidc.client_secrets["issuer"].split("/")[-1]
+keycloak_openid = KeycloakOpenID(server_url="https://{}/auth/".format(keycloak_netloc),
+                    client_id=oidc.client_secrets["client_id"],
+                    realm_name=keycloak_realm,
+                    client_secret_key=oidc.client_secrets["client_secret"],
+                    verify=False)
+
 
 @blueprint.route('/')
 @blueprint.route('/index')
@@ -49,7 +51,12 @@ def upload():
     file = request.files['file']
 
     # save_path = os.path.join(config.data_dir, secure_filename(file.filename))
-    save_path = "{}/tmp/{}".format(here, secure_filename(file.filename))
+    user_openid = oidc.user_getfield('sub')
+    if not user_openid:
+        return make_response(('sub of user is required', 400))
+    save_dir = os.path.join(here, "tmp", user_openid)
+    os.makedirs(save_dir, exist_ok=True)
+    save_path = os.path.join(save_dir, secure_filename(file.filename))
     current_chunk = int(request.form['dzchunkindex'])
 
     # If the file already exists it's ok if we are appending to it,
@@ -86,8 +93,6 @@ def upload():
 
     return make_response(("Chunk upload successful", 200))
 
-app.register_blueprint(blueprint)
-
 @app.route("/login")
 @oidc.require_login
 def login():
@@ -95,6 +100,8 @@ def login():
 
 @app.route("/logout")
 def logout():
+    keycloak_openid.logout(oidc.get_refresh_token())
     oidc.logout()
     return redirect("/")
 
+app.register_blueprint(blueprint)
