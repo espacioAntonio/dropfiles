@@ -5,3 +5,4 @@ cherrypy
 Flask-Session
 flask-oidc
 python-keycloak
+pymongo

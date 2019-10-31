@@ -13,6 +13,10 @@ from werkzeug.utils import secure_filename
 from flask_oidc import OpenIDConnect
 from keycloak import KeycloakOpenID
 
+from .stores.mongodb import CredentialsStore
+
+mongo_credentials_store = CredentialsStore()
+
 here = os.path.abspath(os.path.dirname(__file__))
 blueprint = Blueprint('templated', __name__, template_folder='templates')
 log = logging.getLogger('dropfiles')
@@ -24,7 +28,7 @@ app.config["OIDC_COOKIE_SECURE"] = False
 app.config["OIDC_CALLBACK_ROUTE"] = "/oidc/callback"
 app.config["OIDC_SCOPES"] = ["openid", "email", "profile"]
 app.config["SECRET_KEY"] = "{{ LONG_RANDOM_STRING }}"
-oidc = OpenIDConnect(app)
+oidc = OpenIDConnect(app, credentials_store=mongo_credentials_store)
 
 keycloak_netloc = urlparse(oidc.client_secrets["issuer"]).netloc
 keycloak_realm = oidc.client_secrets["issuer"].split("/")[-1]
@@ -40,6 +44,7 @@ keycloak_openid = KeycloakOpenID(server_url="https://{}/auth/".format(keycloak_n
 @oidc.require_login
 def index():
     # Route to serve the upload form
+    print(oidc._retrieve_userinfo())
     return render_template('index.html',
                            page_name='Main',
                            project_name="dropfiles")
@@ -55,7 +60,9 @@ def upload():
     if not user_openid:
         return make_response(('sub of user is required', 400))
     save_dir = os.path.join(here, "tmp", user_openid)
-    os.makedirs(save_dir, exist_ok=True)
+    # os.makedirs(save_dir, exist_ok=True)
+    email_file = "{}/__info__{}__info__".format(save_dir, oidc.user_getfield('email'))
+    open(email_file , 'a').close()
     save_path = os.path.join(save_dir, secure_filename(file.filename))
     current_chunk = int(request.form['dzchunkindex'])
 
