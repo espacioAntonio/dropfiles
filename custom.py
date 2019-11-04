@@ -22,7 +22,7 @@ blueprint = Blueprint('templated', __name__, template_folder='templates')
 log = logging.getLogger('dropfiles')
 
 app = Flask('dropfiles',
-                  template_folder=os.path.join(here, 'templates'))
+            template_folder=os.path.join(here, 'templates'))
 app.config["OIDC_CLIENT_SECRETS"] = "client_secrets.json"
 app.config["OIDC_COOKIE_SECURE"] = False
 app.config["OIDC_CALLBACK_ROUTE"] = "/oidc/callback"
@@ -33,10 +33,10 @@ oidc = OpenIDConnect(app, credentials_store=mongo_credentials_store)
 keycloak_netloc = urlparse(oidc.client_secrets["issuer"]).netloc
 keycloak_realm = oidc.client_secrets["issuer"].split("/")[-1]
 keycloak_openid = KeycloakOpenID(server_url="https://{}/auth/".format(keycloak_netloc),
-                    client_id=oidc.client_secrets["client_id"],
-                    realm_name=keycloak_realm,
-                    client_secret_key=oidc.client_secrets["client_secret"],
-                    verify=False)
+                                 client_id=oidc.client_secrets["client_id"],
+                                 realm_name=keycloak_realm,
+                                 client_secret_key=oidc.client_secrets["client_secret"],
+                                 verify=False)
 
 
 @blueprint.route('/')
@@ -61,8 +61,9 @@ def upload():
         return make_response(('sub of user is required', 400))
     save_dir = os.path.join(here, "tmp", user_openid)
     # os.makedirs(save_dir, exist_ok=True)
-    email_file = "{}/__info__{}__info__".format(save_dir, oidc.user_getfield('email'))
-    open(email_file , 'a').close()
+    email_file = "{}/__info__{}__info__".format(
+        save_dir, oidc.user_getfield('email'))
+    open(email_file, 'a').close()
     save_path = os.path.join(save_dir, secure_filename(file.filename))
     current_chunk = int(request.form['dzchunkindex'])
 
@@ -100,15 +101,18 @@ def upload():
 
     return make_response(("Chunk upload successful", 200))
 
+
 @app.route("/login")
 @oidc.require_login
 def login():
     return redirect("/")
+
 
 @app.route("/logout")
 def logout():
     keycloak_openid.logout(oidc.get_refresh_token())
     oidc.logout()
     return redirect("/")
+
 
 app.register_blueprint(blueprint)
