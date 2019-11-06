@@ -11,8 +11,8 @@
             chunking: true,
             forceChunking: true,
             url: '/upload',
-            maxFilesize: 2049, // megabytes
-            chunkSize: 50000000, // bytes - 50MB
+            maxFilesize: 4097, // megabytes
+            chunkSize: 80000000, // bytes - 50MB
             retryChunks: true,
             init: function() {
               this.on("success", function(file) {
