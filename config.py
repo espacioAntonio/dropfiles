@@ -18,3 +18,6 @@ else:
 
 os.makedirs(os.path.join(here, "tmp"), exist_ok=True)
 os.makedirs(os.path.join(here, "logs"), exist_ok=True)
+
+security = "OIDC"
+keycloak = True
