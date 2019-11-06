@@ -56,37 +56,26 @@ def upload():
 
     if request.form:
         current_chunk = int(request.form['dzchunkindex'])
-    else:
-        current_chunk = 0
-    log.debug(f"current_chunk: {current_chunk}")
+        log.debug(f"current_chunk: {current_chunk}")
 
-    # If the file already exists it's ok if we are appending to it,
-    # but not if it's new file that would overwrite the existing one
-    if os.path.exists(save_path) and current_chunk == 0:
-        # 400 and 500s will tell dropzone that an error occurred and show an error
-        return make_response(('File already exists', 400))
-
-    try:
-        with open(save_path, 'ab') as f:
-            if request.form:
+        # If the file already exists it's ok if we are appending to it,
+        # but not if it's new file that would overwrite the existing one
+        if os.path.exists(save_path) and current_chunk == 0:
+            # 400 and 500s will tell dropzone that an error occurred and show an error
+            return make_response(('File already exists', 400))
+        try:
+            with open(save_path, 'ab') as f:
                 f.seek(int(request.form['dzchunkbyteoffset']))
-            else:
-                f.seek(0)
-            f.write(file.stream.read())
-    except OSError:
-        # log.exception will include the traceback so we can see what's wrong
-        log.exception('Could not write to file')
-        return make_response(("Not sure why,"
-                              " but we couldn't write the file to disk", 500))
+                f.write(file.stream.read())
+        except OSError:
+            # log.exception will include the traceback so we can see what's wrong
+            log.exception('Could not write to file')
+            return make_response(("Not sure why,"
+                                  " but we couldn't write the file to disk", 500))
 
-    if request.form:
         total_chunks = int(request.form['dztotalchunkcount'])
-    else:
-        total_chunks = 1
-
-    if current_chunk + 1 == total_chunks:
-        # This was the last chunk, the file should be complete and the size we expect
-        if request.form:
+        if current_chunk + 1 == total_chunks:
+            # This was the last chunk, the file should be complete and the size we expect
             if os.path.getsize(save_path) != int(request.form['dztotalfilesize']):
                 log.error(f"File {file.filename} was completed, "
                           f"but has a size mismatch."
@@ -95,9 +84,27 @@ def upload():
                 return make_response(('Size mismatch', 500))
             else:
                 log.info(f'File {file.filename} has been uploaded successfully')
+        else:
+            log.debug(f'Chunk {current_chunk + 1} of {total_chunks} '
+                      f'for file {file.filename} complete')
+
     else:
-        log.debug(f'Chunk {current_chunk + 1} of {total_chunks} '
-                  f'for file {file.filename} complete')
+        log.debug(f"file is comming: {file.filename}")
+        # If the file already exists it's ok if we are appending to it,
+        # but not if it's new file that would overwrite the existing one
+        if os.path.exists(save_path):
+            # 400 and 500s will tell dropzone that an error occurred and show an error
+            return make_response(('File already exists', 400))
+        try:
+            with open(save_path, 'ab') as f:
+                f.write(file.stream.read())
+        except OSError:
+            # log.exception will include the traceback so we can see what's wrong
+            log.exception('Could not write to file')
+            return make_response(("Not sure why,"
+                                  " but we couldn't write the file to disk", 500))
+        log.info(f'File {file.filename} has been uploaded successfully')
+
 
     return make_response(("Chunk upload successful", 200))
 
